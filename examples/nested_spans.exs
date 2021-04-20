@@ -3,10 +3,10 @@ defmodule NestedSpans do
   require Integer
 
   def do_something(value) when is_integer(value) and rem(value, 3) == 0 do
-    with_trace("three divides", %{"initial" => value}, fn ->
+    span("three divides", %{"initial" => value, "nested_spans" => true}, fn ->
       Process.sleep(:rand.uniform(10) + 2)
       do_something(value + 1)
-      with_trace("random wait", fn ->
+      span("random wait", fn ->
         Process.sleep(:rand.uniform(12) + 5)
       end)
       Process.sleep(:rand.uniform(10) + 2)
@@ -14,20 +14,20 @@ defmodule NestedSpans do
   end
 
   def do_something(value) when is_integer(value) and rem(value, 2) == 0 do
-    with_trace("two not three numbers", %{"5x" => value}, fn ->
+    span("two not three numbers", %{"5x" => value, "nested_spans" => true}, fn ->
       Process.sleep(:rand.uniform(20))
       do_something(value + 1)
     end)
   end
 
   def do_something(value) when is_integer(value) do
-    with_trace("remaining", %{"last" => value}, fn ->
+    span("remaining", %{"last" => value, "nested_spans" => true}, fn ->
       Process.sleep(:rand.uniform(20))
     end)
   end
 end
 
-Enum.each(521..530, fn i ->
+Enum.each(531..550, fn i ->
   NestedSpans.do_something(i)
 end)
 

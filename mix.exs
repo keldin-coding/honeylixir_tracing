@@ -29,7 +29,7 @@ defmodule HoneylixirTracing.MixProject do
 
   defp deps do
     [
-      {:honeylixir, path: "../honeylixir"}
+      {:honeylixir, "~> 0.5"}
     ]
   end
 

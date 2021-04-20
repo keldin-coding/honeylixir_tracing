@@ -2,7 +2,7 @@ defmodule HoneylixirTracing.MixProject do
   use Mix.Project
 
   @source_url "https://github.com/lirossarvet/honeylixir_tracing"
-  @version "0.1.0-dev"
+  @version "0.1.0"
 
   def project do
     [

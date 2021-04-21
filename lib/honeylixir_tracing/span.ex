@@ -53,6 +53,10 @@ defmodule HoneylixirTracing.Span do
     })
   end
 
+  def add_field_data(%Span{event: event} = span, fields) when is_map(fields) do
+    %{span | event: Event.add(event, fields)}
+  end
+
   defp duration_ms_from_nativetime(start_time, end_time) do
     diff = (end_time - start_time) |> System.convert_time_unit(:native, :microsecond)
 

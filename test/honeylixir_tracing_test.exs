@@ -3,6 +3,7 @@ defmodule HoneylixirTracingTest do
   doctest HoneylixirTracing
 
   setup do
+    teardown()
     start_supervised!(HoneylixirTestListener)
 
     :ok
@@ -92,6 +93,46 @@ defmodule HoneylixirTracingTest do
                %{"name" => "errored_child", "b" => 2}
              ] = fieldsets_from_listener()
     end
+  end
+
+  describe "add_field_data/1" do
+    test "adds to the underlying event the entire map given" do
+      HoneylixirTracing.span("test span", fn ->
+        assert :ok = HoneylixirTracing.add_field_data(%{"new field" => 1, "other" => 2})
+      end)
+
+      assert [%{"name" => "test span", "new field" => 1, "other" => 2}] =
+               fieldsets_from_listener()
+    end
+
+    test "updates the span in ETS with the new data" do
+      HoneylixirTracing.span("test span", %{"old field" => :old}, fn ->
+        assert :ok = HoneylixirTracing.add_field_data(%{"new field" => 1})
+
+        # This is convoluted, but here we go... We're going to get the current
+        # span which is in the process dictionary. Then use the {trace_id, span_id}
+        # tuple from it which serves as the key in our :ets table. Then manually
+        # do a lookup in the table and ensure it has our new field set.
+        assert span = HoneylixirTracing.Context.current_span()
+
+        %HoneylixirTracing.Span{trace_id: trace_id, span_id: span_id} = span
+
+        assert [{{^trace_id, ^span_id}, _ttl, found_span}] =
+                 :ets.lookup(:honeylixir_tracing_context, {span.trace_id, span.span_id})
+
+        assert found_span.event.fields["new field"] == 1
+        assert found_span.event.fields["old field"] == :old
+      end)
+    end
+
+    test "does nothing if there is no current span" do
+      assert is_nil(HoneylixirTracing.add_field_data(%{"new field" => 1}))
+    end
+  end
+
+  defp teardown() do
+    Process.delete(:honeylixir_context)
+    :ets.delete_all_objects(:honeylixir_tracing_context)
   end
 
   defp fieldsets_from_listener() do

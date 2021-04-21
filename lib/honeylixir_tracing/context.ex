@@ -64,6 +64,8 @@ defmodule HoneylixirTracing.Context do
     {current_span, remaining} = List.pop_at(current_context(), 0)
     clear_span(current_span)
     Process.put(@context_key, remaining)
+
+    current_span
   end
 
   @spec current_span_id() :: String.t() | nil
@@ -76,7 +78,7 @@ defmodule HoneylixirTracing.Context do
     if current_span = current_span(), do: current_span.trace_id, else: nil
   end
 
-  defp add_span(%Span{trace_id: trace_id, span_id: span_id} = span) do
+  def add_span(%Span{trace_id: trace_id, span_id: span_id} = span) do
     :ets.insert(@table_name, {{trace_id, span_id}, ttl(), span})
   end
 

@@ -38,7 +38,8 @@ defmodule HoneylixirTracing.MixProject do
   defp docs() do
     [
       main: HoneylixirTracing,
-      source_url: @source_url
+      source_url: @source_url,
+      extras: ["CHANGELOG.md"]
     ]
   end
 

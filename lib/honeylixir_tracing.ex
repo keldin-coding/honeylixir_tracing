@@ -49,7 +49,7 @@ defmodule HoneylixirTracing do
   ```
   defmodule TestModule do
     def cool_work(arg1, arg2) do
-      span("doing-cool-work", %{"arg1" => arg1, "arg2" => arg2}, fn ->
+      span("TestModule.cool_work/2", %{"arg1" => arg1, "arg2" => arg2}, fn ->
         arg1 + arg2
       end)
     end
@@ -62,7 +62,7 @@ defmodule HoneylixirTracing do
   ```
   defmodule TestModule do
     def cool_work(arg1, arg2) do
-      span("doing-cool-work", %{"arg1" => arg1, "arg2" => arg2}, fn ->
+      span("TestModule.cool_work/2", %{"arg1" => arg1, "arg2" => arg2}, fn ->
         do_cool_work(arg1, arg2)
       end)
     end
@@ -75,6 +75,26 @@ defmodule HoneylixirTracing do
 
   In both cases, the return value remains the same. The result of `span/2,3` calls
   is the result of whatever function is passed in as the work.
+
+  ### Adding data
+
+  If you want to add fields to your spans after initialization or invocation, we can
+  use `add_field_data/1` to add data. `add_field_data/1` accepts a Map of strings
+  to any encodable entity (just like `span/2` and the underlying `Honeylixir.Event`)
+  and modifies the currently active span with the information. If no span is active,
+  this function does nothing.
+
+  ```
+  defmodule TestModule do
+    def some_work() do
+      span("TestModule.some_work/0", fn ->
+        result = CoolModule.do_something_else()
+
+        HoneylixirTracing.add_field_data(%{"cool_mod.result" => result})
+      end)
+    end
+  end
+  ```
   """
 
   alias Honeylixir.Event
@@ -106,11 +126,31 @@ defmodule HoneylixirTracing do
     try do
       work.()
     after
-      HoneylixirTracing.Context.clear_current_span()
+      latest_span = HoneylixirTracing.Context.clear_current_span()
 
-      span
-      |> Span.prepare_to_send()
-      |> Event.send()
+      # Account for something going wrong and the current span being missing
+      # somehow. We'll assume horrible things happened and not try to send a
+      # possibly broken and outdated span from above.
+      if latest_span do
+        latest_span
+        |> Span.prepare_to_send()
+        |> Event.send()
+      end
+    end
+  end
+
+  @doc """
+  Adds field data to the current span.
+
+  This function does nothing if there is no currently active span. Any duplicate field
+  names will have their contents replaced. Returns an `:ok` if a span was updated
+  successfully, `nil` if there is no span.
+  """
+  @spec add_field_data(Honeylixir.Event.fields_map()) :: :ok | nil
+  def add_field_data(fields) when is_map(fields) do
+    if current_span = HoneylixirTracing.Context.current_span() do
+      HoneylixirTracing.Span.add_field_data(current_span, fields)
+      |> HoneylixirTracing.Context.set_current_span()
     end
   end
 end

@@ -1,5 +1,7 @@
 # HoneylixirTracing
 
+[![CircleCI](https://circleci.com/gh/lirossarvet/honeylixir_tracing.svg?style=shield)](https://circleci.com/gh/lirossarvet/honeylixir_tracing)
+
 Note: This project is in no way officially affiliated with Honeycomb. This work is my own.
 
 VERY MUCH A WORK IN PROGRESS

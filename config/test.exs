@@ -2,5 +2,6 @@ import Config
 
 config :honeylixir,
   service_name: "honeylixir-tests",
-  datetime_module: Honeylixir.DateTimeFake,
+  datetime_module: DateTimeFake,
+  transmission_queue: HoneylixirTestListener,
   api_host: "https://api.honeycomb.io"

@@ -1,10 +1,13 @@
 defmodule HoneylixirTracing.Span do
+  @moduledoc false
+
   alias Honeylixir.Event
   alias __MODULE__
 
   @trace_id_field "trace.trace_id"
   @span_id_field "trace.span_id"
   @parent_id_field "trace.parent_id"
+  @duration_ms_field "duration_ms"
 
   @type t :: %__MODULE__{
           event: Honeylixir.Event.t(),
@@ -41,21 +44,13 @@ defmodule HoneylixirTracing.Span do
 
   @spec prepare_to_send(t()) :: Honeylixir.Event.t()
   def prepare_to_send(%Span{} = span) do
-    e =
-      Event.add(
-        span.event,
-        %{
-          @trace_id_field => span.trace_id,
-          @span_id_field => span.span_id,
-          "duration_ms" => duration_ms_from_nativetime(span.start_time, System.monotonic_time())
-        }
-      )
-
-    if span.parent_id do
-      Event.add_field(e, @parent_id_field, span.parent_id)
-    else
-      Event.add_field(e, @parent_id_field, nil)
-    end
+    span.event
+    |> Event.add(%{
+      @trace_id_field => span.trace_id,
+      @span_id_field => span.span_id,
+      @parent_id_field => span.parent_id,
+      @duration_ms_field => duration_ms_from_nativetime(span.start_time, System.monotonic_time())
+    })
   end
 
   defp duration_ms_from_nativetime(start_time, end_time) do

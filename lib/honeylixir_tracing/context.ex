@@ -1,6 +1,5 @@
 defmodule HoneylixirTracing.Context do
-  @moduledoc """
-  """
+  @moduledoc false
 
   # Primarily using this to have a separate process own the table
   use GenServer

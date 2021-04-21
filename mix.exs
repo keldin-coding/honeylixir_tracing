@@ -8,7 +8,7 @@ defmodule HoneylixirTracing.MixProject do
     [
       app: :honeylixir_tracing,
       version: @version,
-      elixir: "~> 1.11",
+      elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       docs: docs(),
@@ -30,13 +30,14 @@ defmodule HoneylixirTracing.MixProject do
   defp deps do
     [
       {:honeylixir, "~> 0.6"},
-      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
+      {:bypass, "~> 2.1", only: :test}
     ]
   end
 
   defp docs() do
     [
-      main: Honeylixir.Tracing,
+      main: HoneylixirTracing,
       source_url: @source_url
     ]
   end

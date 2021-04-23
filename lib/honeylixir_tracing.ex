@@ -73,7 +73,7 @@ defmodule HoneylixirTracing do
   end
   ```
 
-  In both cases, the return value remains the same. The result of `span/2,3` calls
+  In both cases, the return value remains the same. The result of and `span` (`span/2`, `span/3`, `span/4`) calls
   is the result of whatever function is passed in as the work.
 
   ### Adding data
@@ -104,6 +104,10 @@ defmodule HoneylixirTracing do
   Create and send a span to Honeycomb.
   """
   @type span_return :: any()
+
+  @typedoc """
+  A 0 arity function used as the work to be measured by the span.
+  """
   @type work_function :: (() -> any())
 
   @doc """
@@ -174,7 +178,7 @@ defmodule HoneylixirTracing do
 
   This function does nothing if there is no currently active span. Any duplicate field
   names will have their contents replaced. Returns an `:ok` if a span was updated
-  successfully, `nil` if there is no span.
+  successfully, `nil` otherwise.
   """
   @spec add_field_data(Honeylixir.Event.fields_map()) :: :ok | nil
   def add_field_data(fields) when is_map(fields) do

@@ -45,9 +45,9 @@ defmodule HoneylixirTracing.Span do
     }
   end
 
-  @spec setup(HoneylixirTracing.Propogation.t(), String.t(), Honeylixir.Event.fields_map()) :: t()
+  @spec setup(HoneylixirTracing.Propagation.t(), String.t(), Honeylixir.Event.fields_map()) :: t()
   def setup(
-        %HoneylixirTracing.Propogation{
+        %HoneylixirTracing.Propagation{
           trace_id: trace_id,
           parent_id: parent_id,
           dataset: dataset

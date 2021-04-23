@@ -1,6 +1,6 @@
-defmodule HoneylixirTracing.PropogationTest do
+defmodule HoneylixirTracing.PropagationTest do
   use ExUnit.Case
-  alias HoneylixirTracing.Propogation
+  alias HoneylixirTracing.Propagation
 
   setup do
     %{span: HoneylixirTracing.Span.setup("span", %{})}
@@ -12,21 +12,21 @@ defmodule HoneylixirTracing.PropogationTest do
       event = %{event | dataset: "with a space"}
       span = %{span | event: event}
 
-      propogation =
+      propagation =
         span
-        |> Propogation.from_span()
-        |> Propogation.to_string()
+        |> Propagation.from_span()
+        |> Propagation.to_string()
 
-      assert String.contains?(propogation, "dataset=with+a+space")
+      assert String.contains?(propagation, "dataset=with+a+space")
     end
 
     test "generates a header string in Honeycomb format", %{span: span} do
-      propogation =
+      propagation =
         span
-        |> Propogation.from_span()
-        |> Propogation.to_string()
+        |> Propagation.from_span()
+        |> Propagation.to_string()
 
-      assert propogation ==
+      assert propagation ==
                "1;dataset=honeylixir-test,trace_id=#{span.trace_id},parent_id=#{span.span_id},context="
     end
   end

@@ -120,17 +120,17 @@ defmodule HoneylixirTracing do
   @doc """
   Create and send a span to Honeycomb by propogating tracing context.
 
-  Accepts a `t:HoneylixirTracing.Propogation.t/0` for continuing work from another Process's trace.
+  Accepts a `t:HoneylixirTracing.Propagation.t/0` for continuing work from another Process's trace.
   """
   @spec span(
-          HoneylixirTracing.Propogation.t(),
+          HoneylixirTracing.Propagation.t(),
           String.t(),
           Honeylixir.Event.fields_map(),
           work_function()
         ) :: span_return()
-  def span(%HoneylixirTracing.Propogation{} = propogation, span_name, %{} = fields, work)
+  def span(%HoneylixirTracing.Propagation{} = propagation, span_name, %{} = fields, work)
       when is_binary(span_name) and is_function(work, 0) do
-    Span.setup(propogation, span_name, fields)
+    Span.setup(propagation, span_name, fields)
     |> do_span(work)
   end
 
@@ -140,15 +140,15 @@ defmodule HoneylixirTracing do
   This form, `span/3`, has two possible calling signatures: the first is a non-propogated
   span with initial fields; the second accepts a propogated trace but no initial fields.
   """
-  @spec span(HoneylixirTracing.Propogation.t(), String.t(), work_function()) :: span_return()
+  @spec span(HoneylixirTracing.Propagation.t(), String.t(), work_function()) :: span_return()
   @spec span(String.t(), Honeylixir.Event.fields_map(), work_function()) :: span_return()
-  def span(propogation_or_name, name_or_fields, work)
+  def span(propagation_or_name, name_or_fields, work)
 
   def span(span_name, %{} = fields, work) when is_binary(span_name) and is_function(work, 0) do
     Span.setup(span_name, fields) |> do_span(work)
   end
 
-  def span(%HoneylixirTracing.Propogation{} = prop, span_name, work)
+  def span(%HoneylixirTracing.Propagation{} = prop, span_name, work)
       when is_binary(span_name) and is_function(work, 0) do
     Span.setup(prop, span_name, %{})
     |> do_span(work)
@@ -189,13 +189,13 @@ defmodule HoneylixirTracing do
   end
 
   @doc """
-  Provides a `t:Honeylixir.Propogation.t/0` for sharing tracing data between processes.
+  Provides a `t:Honeylixir.Propagation.t/0` for sharing tracing data between processes.
 
   If there is no span currently active, this will return `nil`.
   """
-  @spec current_propogation_context() :: HoneylixirTracing.Propogation.t() | nil
-  def current_propogation_context() do
+  @spec current_propagation_context() :: HoneylixirTracing.Propagation.t() | nil
+  def current_propagation_context() do
     HoneylixirTracing.Context.current_span()
-    |> HoneylixirTracing.Propogation.from_span()
+    |> HoneylixirTracing.Propagation.from_span()
   end
 end

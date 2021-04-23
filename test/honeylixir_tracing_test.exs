@@ -95,21 +95,21 @@ defmodule HoneylixirTracingTest do
     end
   end
 
-  describe "span/3 with propogation" do
+  describe "span/3 with propagation" do
     test "sets the shared tracing data appropriately" do
       parent_span = HoneylixirTracing.Span.setup("parent", %{})
       event = %{parent_span.event | dataset: "something-fake"}
       parent_span = %{parent_span | event: event}
 
       :ok = HoneylixirTracing.Context.set_current_span(parent_span)
-      propogation = HoneylixirTracing.current_propogation_context()
+      propagation = HoneylixirTracing.current_propagation_context()
 
       # This is dumb, but it ensures there is no current span
       teardown()
 
       assert is_nil(HoneylixirTracing.Context.current_span())
 
-      assert :ok = HoneylixirTracing.span(propogation, "test child", fn -> :ok end)
+      assert :ok = HoneylixirTracing.span(propagation, "test child", fn -> :ok end)
 
       [sent_span] = fieldsets_from_listener()
 
@@ -119,14 +119,14 @@ defmodule HoneylixirTracingTest do
     end
   end
 
-  describe "span/4 with propogation" do
+  describe "span/4 with propagation" do
     test "sets the shared tracing data appropriately" do
       parent_span = HoneylixirTracing.Span.setup("parent", %{})
       event = %{parent_span.event | dataset: "something-fake"}
       parent_span = %{parent_span | event: event}
 
       :ok = HoneylixirTracing.Context.set_current_span(parent_span)
-      propogation = HoneylixirTracing.current_propogation_context()
+      propagation = HoneylixirTracing.current_propagation_context()
 
       # This is dumb, but it ensures there is no current span
       teardown()
@@ -134,7 +134,7 @@ defmodule HoneylixirTracingTest do
       assert is_nil(HoneylixirTracing.Context.current_span())
 
       assert :ok =
-               HoneylixirTracing.span(propogation, "test child", %{"cool" => "people"}, fn ->
+               HoneylixirTracing.span(propagation, "test child", %{"cool" => "people"}, fn ->
                  :ok
                end)
 
@@ -182,12 +182,12 @@ defmodule HoneylixirTracingTest do
     end
   end
 
-  describe "current_propogation_context/0" do
+  describe "current_propagation_context/0" do
     test "returns nil if there is no current span" do
-      assert is_nil(HoneylixirTracing.current_propogation_context())
+      assert is_nil(HoneylixirTracing.current_propagation_context())
     end
 
-    test "returns a propogation context when a current span exists" do
+    test "returns a propagation context when a current span exists" do
       span = HoneylixirTracing.Span.setup("foo", %{})
       :ok = HoneylixirTracing.Context.set_current_span(span)
 
@@ -199,12 +199,12 @@ defmodule HoneylixirTracingTest do
 
       expected_dataset = event.dataset
 
-      assert %HoneylixirTracing.Propogation{
+      assert %HoneylixirTracing.Propagation{
                trace_id: ^expected_trace_id,
                parent_id: ^expected_parent_id,
                dataset: ^expected_dataset,
                context: nil
-             } = HoneylixirTracing.current_propogation_context()
+             } = HoneylixirTracing.current_propagation_context()
 
       teardown()
     end

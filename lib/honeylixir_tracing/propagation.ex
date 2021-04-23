@@ -1,15 +1,15 @@
-defmodule HoneylixirTracing.Propogation do
+defmodule HoneylixirTracing.Propagation do
   @moduledoc """
-  Module responsible for enabling trace propogation.
+  Module responsible for enabling trace propagation.
 
-  Propogation can be used to pass trace information between Processes within the
+  Propagation can be used to pass trace information between Processes within the
   same application or serialized to be sent to other services for distributed tracing.
   """
 
   defstruct [:dataset, :trace_id, :parent_id, :context]
 
   @typedoc """
-  Struct used to pass propogation around between Elixir processes. Can also be
+  Struct used to pass propagation around between Elixir processes. Can also be
   serialized with `Kernel.to_string/1` as it implements `String.Chars` for use
   in headers.
   """
@@ -20,7 +20,7 @@ defmodule HoneylixirTracing.Propogation do
           context: nil
         }
 
-  def to_string(%HoneylixirTracing.Propogation{
+  def to_string(%HoneylixirTracing.Propagation{
         dataset: dataset,
         trace_id: trace_id,
         parent_id: parent_id
@@ -32,14 +32,14 @@ defmodule HoneylixirTracing.Propogation do
 
   @doc false
   def from_span(%HoneylixirTracing.Span{event: event, trace_id: trace_id, span_id: span_id}) do
-    %HoneylixirTracing.Propogation{dataset: event.dataset, trace_id: trace_id, parent_id: span_id}
+    %HoneylixirTracing.Propagation{dataset: event.dataset, trace_id: trace_id, parent_id: span_id}
   end
 
   def from_span(_), do: nil
 
   defimpl String.Chars do
-    def to_string(%HoneylixirTracing.Propogation{} = prop) do
-      HoneylixirTracing.Propogation.to_string(prop)
+    def to_string(%HoneylixirTracing.Propagation{} = prop) do
+      HoneylixirTracing.Propagation.to_string(prop)
     end
   end
 end

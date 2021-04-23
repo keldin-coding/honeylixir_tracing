@@ -9,6 +9,9 @@ defmodule HoneylixirTracing.Span do
   @parent_id_field "trace.parent_id"
   @duration_ms_field "duration_ms"
 
+  @typedoc """
+  Representation of a Span used internally.
+  """
   @type t :: %__MODULE__{
           event: Honeylixir.Event.t(),
           parent_id: String.t(),
@@ -28,8 +31,8 @@ defmodule HoneylixirTracing.Span do
     sent: false
   ]
 
-  @spec setup(String.t(), %{String.t() => any()}) :: t()
-  def setup(name, %{} = fields) do
+  @spec setup(String.t(), Honeylixir.Event.fields_map()) :: t()
+  def setup(name, %{} = fields) when is_binary(name) do
     event = Honeylixir.Event.create(Map.put(fields, "name", name))
     start_time = System.monotonic_time()
 
@@ -38,6 +41,31 @@ defmodule HoneylixirTracing.Span do
       span_id: Honeylixir.generate_short_id(),
       parent_id: HoneylixirTracing.Context.current_span_id(),
       trace_id: HoneylixirTracing.Context.current_trace_id() || Honeylixir.generate_long_id(),
+      start_time: start_time
+    }
+  end
+
+  @spec setup(HoneylixirTracing.Propogation.t(), String.t(), Honeylixir.Event.fields_map()) :: t()
+  def setup(
+        %HoneylixirTracing.Propogation{
+          trace_id: trace_id,
+          parent_id: parent_id,
+          dataset: dataset
+        },
+        name,
+        %{} = fields
+      )
+      when is_binary(name) do
+    event = Honeylixir.Event.create(Map.put(fields, "name", name))
+    event = %{event | dataset: dataset}
+
+    start_time = System.monotonic_time()
+
+    %Span{
+      event: event,
+      span_id: Honeylixir.generate_short_id(),
+      parent_id: parent_id,
+      trace_id: trace_id,
       start_time: start_time
     }
   end

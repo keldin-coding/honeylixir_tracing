@@ -40,7 +40,7 @@ defmodule HoneylixirTracing.Context do
   end
 
   @spec set_current_span({String.t(), String.t()}) :: :ok | nil
-  def set_current_span({trace_id, span_id}) do
+  def set_current_span({trace_id, span_id}) when is_binary(trace_id) and is_binary(span_id) do
     case :ets.lookup(@table_name, {trace_id, span_id}) do
       [{{^trace_id, ^span_id}, _ttl, %Span{} = span}] ->
         context = Process.get(@context_key, [])
@@ -51,6 +51,8 @@ defmodule HoneylixirTracing.Context do
         nil
     end
   end
+
+  def set_current_span(_), do: nil
 
   @spec current_span() :: nil | HoneylixirTracing.Span.t()
   def current_span() do
@@ -78,9 +80,12 @@ defmodule HoneylixirTracing.Context do
     if current_span = current_span(), do: current_span.trace_id, else: nil
   end
 
-  def add_span(%Span{trace_id: trace_id, span_id: span_id} = span) do
+  def add_span(%Span{trace_id: trace_id, span_id: span_id} = span)
+      when is_binary(trace_id) and is_binary(span_id) do
     :ets.insert(@table_name, {{trace_id, span_id}, ttl(), span})
   end
+
+  def add_span(_), do: false
 
   defp clear_span(%Span{trace_id: trace_id, span_id: span_id}) do
     :ets.delete(@table_name, {trace_id, span_id})

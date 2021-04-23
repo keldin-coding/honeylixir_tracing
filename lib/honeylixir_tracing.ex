@@ -101,26 +101,56 @@ defmodule HoneylixirTracing do
   alias HoneylixirTracing.Span
 
   @typedoc """
-  Span returns whatever the result of the work function given is.
+  Create and send a span to Honeycomb.
   """
-  @type span_return() :: any()
+  @type span_return :: any()
+  @type work_function :: (() -> any())
 
   @doc """
-  Send a span to Honeycomb of the given name.
-
-  See `span/3` for full details. This version uses an empty map for the `fields`
-  argument.
+  Create and send a span to Honeycomb.
   """
-  @spec span(String.t(), (() -> any())) :: span_return()
+  @spec span(String.t(), work_function()) :: span_return()
   def span(span_name, work) when is_binary(span_name) and is_function(work, 0),
     do: span(span_name, %{}, work)
 
   @doc """
-  Send a span to Honeycomb of the given name with the specified fields attached.
+  Create and send a span to Honeycomb by propogating tracing context.
+
+  Accepts a `t:HoneylixirTracing.Propogation.t/0` for continuing work from another Process's trace.
   """
-  @spec span(String.t(), Honeylixir.Event.fields_map(), (() -> any())) :: span_return()
+  @spec span(
+          HoneylixirTracing.Propogation.t(),
+          String.t(),
+          Honeylixir.Event.fields_map(),
+          work_function()
+        ) :: span_return()
+  def span(%HoneylixirTracing.Propogation{} = propogation, span_name, %{} = fields, work)
+      when is_binary(span_name) and is_function(work, 0) do
+    Span.setup(propogation, span_name, fields)
+    |> do_span(work)
+  end
+
+  @doc """
+  Create and send a span to Honeycomb by optionally propogating tracing context.
+
+  This form, `span/3`, has two possible calling signatures: the first is a non-propogated
+  span with initial fields; the second accepts a propogated trace but no initial fields.
+  """
+  @spec span(HoneylixirTracing.Propogation.t(), String.t(), work_function()) :: span_return()
+  @spec span(String.t(), Honeylixir.Event.fields_map(), work_function()) :: span_return()
+  def span(propogation_or_name, name_or_fields, work)
+
   def span(span_name, %{} = fields, work) when is_binary(span_name) and is_function(work, 0) do
-    span = Span.setup(span_name, fields)
+    Span.setup(span_name, fields) |> do_span(work)
+  end
+
+  def span(%HoneylixirTracing.Propogation{} = prop, span_name, work)
+      when is_binary(span_name) and is_function(work, 0) do
+    Span.setup(prop, span_name, %{})
+    |> do_span(work)
+  end
+
+  defp do_span(%HoneylixirTracing.Span{} = span, work) do
     HoneylixirTracing.Context.set_current_span(span)
 
     try do
@@ -152,5 +182,16 @@ defmodule HoneylixirTracing do
       HoneylixirTracing.Span.add_field_data(current_span, fields)
       |> HoneylixirTracing.Context.set_current_span()
     end
+  end
+
+  @doc """
+  Provides a `t:Honeylixir.Propogation.t/0` for sharing tracing data between processes.
+
+  If there is no span currently active, this will return `nil`.
+  """
+  @spec current_propogation_context() :: HoneylixirTracing.Propogation.t() | nil
+  def current_propogation_context() do
+    HoneylixirTracing.Context.current_span()
+    |> HoneylixirTracing.Propogation.from_span()
   end
 end

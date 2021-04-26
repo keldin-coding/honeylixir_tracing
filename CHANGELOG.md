@@ -1,5 +1,7 @@
 # Changelog
 
+## 0.3.0 (in progress)
+
 ## 0.2.0
 
 * Add the ability to add fields to the currently active span

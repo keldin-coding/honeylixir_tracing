@@ -31,7 +31,7 @@ defmodule HoneylixirTracing.MixProject do
     [
       {:honeylixir, "~> 0.6"},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
-      {:bypass, "~> 2.1", only: :test}
+      {:credo, only: :dev, runtime: false}
     ]
   end
 

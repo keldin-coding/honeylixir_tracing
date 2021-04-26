@@ -22,5 +22,4 @@ defmodule HoneylixirTestListener do
   end
 end
 
-{:ok, _} = Application.ensure_all_started(:bypass)
 ExUnit.start()

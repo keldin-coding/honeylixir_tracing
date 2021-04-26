@@ -76,6 +76,21 @@ defmodule HoneylixirTracing do
   In both cases, the return value remains the same. The result of and `span` (`span/2`, `span/3`, `span/4`) calls
   is the result of whatever function is passed in as the work.
 
+  ### Cross-Process traces
+
+  Given this is Elixir running on Erlang, it's quite possible a GenServer or some other
+  Process-based design will appear in your system. If this is the case, we have a couple of
+  recommendations on how to ensure predictable tracing data:
+
+  * For synchronous work, add a final argument of `ctx`, which is a `t:HoneylixirTracing.Propogation.t/0` struct, to the callback..
+    This should not be *accepted* by the Client API but instead built for the user directly and passed to the Server.
+    In the callback, use that as the first argument to a `HoneylixirTracing.span/4` call which wraps your work.
+  * For asynchronous work, do *not* pass a context in and start a span from it. Asynchronous work is akin to background work done by a web application,
+    meaning that one would consider them linked spans rather than child spans. You can use the underlying `Honeylixir` library
+    to send these events along. Utility functions may be provided in the future to help with this.
+
+  A simple example for
+
   ### Adding data
 
   If you want to add fields to your spans after initialization or invocation, we can

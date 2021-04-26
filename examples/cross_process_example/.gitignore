@@ -20,13 +20,8 @@ erl_crash.dump
 *.ez
 
 # Ignore package tarball (built via "mix hex.build").
-honeylixir_tracing-*.tar
+cross_process_example-*.tar
 
 
 # Temporary files for e.g. tests
 /tmp
-
-config/*secret.exs
-dev_secret.exs
-
-examples/cross_process_example/mix.lock

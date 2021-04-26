@@ -9,9 +9,10 @@ defmodule HoneylixirTracing.Propagation do
   defstruct [:dataset, :trace_id, :parent_id, :context]
 
   @typedoc """
-  Struct used to pass propagation around between Elixir processes. Can also be
-  serialized with `Kernel.to_string/1` as it implements `String.Chars` for use
-  in headers.
+  Struct used to pass propagation around between Elixir processes.
+
+  Can also be serialized with `Kernel.to_string/1` as it implements `String.Chars`
+  for use in headers.
   """
   @type t :: %__MODULE__{
           dataset: String.t(),
@@ -24,9 +25,23 @@ defmodule HoneylixirTracing.Propagation do
   @header_parse_regex ~r/1;dataset=(?<dataset>[^,]+),trace_id=(?<trace_id>[[:xdigit:]]+),parent_id=(?<parent_id>[[:xdigit:]]+)/
   @header_key "X-Honeycomb-Trace"
 
+  @doc """
+  Provides map of the header key to the propogation context as a string.
+
+  Sets the Header key to `"X-Honeycomb-Trace"` in the map. Note that context is
+  given as an empty string for now as trace fields are not supported.
+  """
+  @spec header(t()) :: %{String.t() => String.t()}
   def header(%HoneylixirTracing.Propagation{} = prop),
     do: %{@header_key => to_string(prop)}
 
+  @doc """
+  Parses out the Honeycomb trace header string.
+
+  Note that the context is ignored as trace fields are not currently supported. If
+  the parsing fails, `nil` is returned.
+  """
+  @spec parse_header(String.t()) :: t() | nil
   def parse_header(header) when is_binary(header) do
     case Regex.named_captures(@header_parse_regex, header) do
       %{"dataset" => dataset, "trace_id" => trace_id, "parent_id" => parent_id} ->

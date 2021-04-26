@@ -22,9 +22,10 @@ defmodule HoneylixirTracing.Propagation do
   # Yeah. It sucks. C'est la vie. There's probably a pattern matching on binaries
   # lurking in here, but I don't know it or see it.
   @header_parse_regex ~r/1;dataset=(?<dataset>[^,]+),trace_id=(?<trace_id>[[:xdigit:]]+),parent_id=(?<parent_id>[[:xdigit:]]+)/
+  @header_key "X-Honeycomb-Trace"
 
   def header(%HoneylixirTracing.Propagation{} = prop),
-    do: %{"X-Honeycomb-Trace" => to_string(prop)}
+    do: %{@header_key => to_string(prop)}
 
   def parse_header(header) when is_binary(header) do
     case Regex.named_captures(@header_parse_regex, header) do

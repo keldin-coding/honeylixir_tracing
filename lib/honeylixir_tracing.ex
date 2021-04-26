@@ -44,7 +44,7 @@ defmodule HoneylixirTracing do
   end
   ```
 
-  If we wanted to trace this function, we could do this:
+  If you wanted to trace this function, you could do:
 
   ```
   defmodule TestModule do
@@ -56,8 +56,8 @@ defmodule HoneylixirTracing do
   end
   ```
 
-  Another option, if we didn't want to increase the nesting of our business logic,
-  would be to extract the logic into a private function:
+  Another option is to wrap the business work in a private function and invoke that
+  in the span function:
 
   ```
   defmodule TestModule do
@@ -73,27 +73,31 @@ defmodule HoneylixirTracing do
   end
   ```
 
-  In both cases, the return value remains the same. The result of and `span` (`span/2`, `span/3`, `span/4`) calls
+  In both cases, the return value remains the same. The result of any `span` (`span/2`, `span/3`, `span/4`) calls
   is the result of whatever function is passed in as the work.
 
   ### Cross-Process traces
 
   Given this is Elixir running on Erlang, it's quite possible a GenServer or some other
-  Process-based design will appear in your system. If this is the case, we have a couple of
-  recommendations on how to ensure predictable tracing data:
+  Process-based design will appear in your system. If this is the case, there are a couple of
+  rough recommendations on how to ensure predictable tracing data:
 
-  * For synchronous work, add a final argument of `ctx`, which is a `t:HoneylixirTracing.Propogation.t/0` struct, to the callback..
-    This should not be *accepted* by the Client API but instead built for the user directly and passed to the Server.
-    In the callback, use that as the first argument to a `HoneylixirTracing.span/4` call which wraps your work.
-  * For asynchronous work, do *not* pass a context in and start a span from it. Asynchronous work is akin to background work done by a web application,
-    meaning that one would consider them linked spans rather than child spans. You can use the underlying `Honeylixir` library
-    to send these events along. Utility functions may be provided in the future to help with this.
+  * For synchronous work, add a final argument of `ctx`, which is a `t:HoneylixirTracing.Propagation.t/0`
+    struct, to the callback. This should not be *accepted* by the Client API but instead
+    built for the user directly and passed to the Server. In the callback, use that as the
+    first argument to a `HoneylixirTracing.span/4` call which wraps your work.
+  * For asynchronous work, do *not* pass a context in and start a span from it.
+    Asynchronous work is akin to background work done by a web application, meaning that
+    one would consider them linked spans rather than child spans. You can use the
+    underlying `Honeylixir` library to send these events along. Utility functions
+    may be provided in the future to help with this.
 
-  A simple example for
+  A small example for doing this within an application for synchronous work can be
+  found in the `cross_process_example` project in the `examples` directory.
 
-  ### Adding data
+  ### Adding data to the current span
 
-  If you want to add fields to your spans after initialization or invocation, we can
+  If you want to add fields to your spans after initialization or invocation, you can
   use `add_field_data/1` to add data. `add_field_data/1` accepts a Map of strings
   to any encodable entity (just like `span/2` and the underlying `Honeylixir.Event`)
   and modifies the currently active span with the information. If no span is active,

@@ -9,7 +9,8 @@ defmodule HoneylixirTracing.Application do
 
   defp children do
     [
-      HoneylixirTracing.Context
+      HoneylixirTracing.Context,
+      HoneylixirTracing.TraceFields
     ] ++ death_the_kid()
   end
 

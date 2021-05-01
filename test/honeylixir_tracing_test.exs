@@ -253,6 +253,7 @@ defmodule HoneylixirTracingTest do
 
   defp teardown() do
     Process.delete(:honeylixir_context)
+    :ets.delete_all_objects(:honeylixir_tracing_trace_fields)
     :ets.delete_all_objects(:honeylixir_tracing_context)
   end
 

@@ -78,8 +78,23 @@ defmodule HoneylixirTracing.Context do
 
   def add_span(_), do: false
 
+  def any_spans_for_trace?(trace_id) do
+    matcher = [{{{:"$1", :_}, :_, :_}, [{:==, :"$1", {:const, trace_id}}], [true]}]
+
+    # Existence check for any spans possibly still tied to a given trace active
+    # in the table
+    case :ets.select(@table_name, matcher, 1) do
+      {[true], _} ->
+        true
+
+      _ ->
+        false
+    end
+  end
+
   defp clear_span(%Span{trace_id: trace_id, span_id: span_id}) do
     :ets.delete(@table_name, {trace_id, span_id})
+    HoneylixirTracing.TraceFields.cleanup_trace(trace_id)
   end
 
   defp clear_span(_), do: nil

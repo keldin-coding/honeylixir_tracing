@@ -137,6 +137,7 @@ defmodule HoneylixirTracing do
   parent, then it will send fine. However, if your span does have a parent older than
   5 minutes, it's entirely probable you will end up with an incomplete trace.
   """
+  @moduledoc since: "0.3.0"
 
   alias Honeylixir.Event
   alias HoneylixirTracing.Span
@@ -154,6 +155,7 @@ defmodule HoneylixirTracing do
   @doc """
   Create and send a span to Honeycomb.
   """
+  @doc since: "0.2.0"
   @spec span(String.t(), work_function()) :: span_return()
   def span(span_name, work) when is_binary(span_name) and is_function(work, 0),
     do: span(span_name, %{}, work)
@@ -163,6 +165,7 @@ defmodule HoneylixirTracing do
 
   Accepts a `t:HoneylixirTracing.Propagation.t/0` for continuing work from another Process's trace.
   """
+  @doc since: "0.2.0"
   @spec span(
           HoneylixirTracing.Propagation.t(),
           String.t(),
@@ -181,6 +184,7 @@ defmodule HoneylixirTracing do
   This form, `span/3`, has two possible calling signatures: the first is a non-propogated
   span with initial fields; the second accepts a propogated trace but no initial fields.
   """
+  @doc since: "0.2.0"
   @spec span(HoneylixirTracing.Propagation.t(), String.t(), work_function()) :: span_return()
   @spec span(String.t(), Honeylixir.Event.fields_map(), work_function()) :: span_return()
   def span(propagation_or_name, name_or_fields, work)
@@ -221,9 +225,10 @@ defmodule HoneylixirTracing do
   Adds field data to the current span.
 
   This function does nothing if there is no currently active span. Any duplicate field
-  names will have their contents replaced. Returns an `:ok` if a span was updated
-  successfully, `nil` otherwise.
+  names will have their contents replaced. Returns the updated span if one is active,
+  `nil` otherwise.
   """
+  @doc since: "0.3.0"
   @spec add_field_data(Honeylixir.Event.fields_map()) :: Honeylixir.Span.t() | nil
   def add_field_data(fields) when is_map(fields) do
     if current_span = HoneylixirTracing.Context.current_span() do
@@ -240,6 +245,7 @@ defmodule HoneylixirTracing do
 
   If there is no span currently active, this will return `nil`.
   """
+  @doc since: "0.2.0"
   @spec current_propagation_context() :: HoneylixirTracing.Propagation.t() | nil
   def current_propagation_context() do
     HoneylixirTracing.Context.current_span()

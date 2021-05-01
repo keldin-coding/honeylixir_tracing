@@ -6,8 +6,6 @@ defmodule HoneylixirTracing.Context do
 
   alias HoneylixirTracing.Span
 
-  # In seconds
-  @default_ttl 300
   @table_name :honeylixir_tracing_context
   @context_key :honeylixir_context
 
@@ -42,7 +40,7 @@ defmodule HoneylixirTracing.Context do
   @spec set_current_span({String.t(), String.t()}) :: :ok | nil
   def set_current_span({trace_id, span_id}) when is_binary(trace_id) and is_binary(span_id) do
     case :ets.lookup(@table_name, {trace_id, span_id}) do
-      [{{^trace_id, ^span_id}, _ttl, %Span{} = span}] ->
+      [{{^trace_id, ^span_id}, _expires_at, %Span{} = span}] ->
         context = Process.get(@context_key, [])
         Process.put(@context_key, [span | context])
         :ok
@@ -82,7 +80,10 @@ defmodule HoneylixirTracing.Context do
 
   def add_span(%Span{trace_id: trace_id, span_id: span_id} = span)
       when is_binary(trace_id) and is_binary(span_id) do
-    :ets.insert(@table_name, {{trace_id, span_id}, ttl(), span})
+    :ets.insert(
+      @table_name,
+      {{trace_id, span_id}, System.monotonic_time(:millisecond) + ttl(), span}
+    )
   end
 
   def add_span(_), do: false
@@ -95,6 +96,5 @@ defmodule HoneylixirTracing.Context do
 
   defp current_context(), do: Process.get(@context_key, [])
 
-  # Allow this to be configured later
-  defp ttl(), do: @default_ttl
+  defp ttl(), do: Application.get_env(:honeylixir_tracing, :span_ttl_sec, 300) * 1000
 end

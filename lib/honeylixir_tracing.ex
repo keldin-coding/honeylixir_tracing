@@ -20,7 +20,7 @@ defmodule HoneylixirTracing do
 
   ## Configuration
 
-  Most of the configuration for this package depends on configuration set for
+  Most of the required configuration for this package depends on configuration set for
   the `Honeylixir` project, the underlying library used for sending the data. The
   absolute minimum configuration required is to set the `team_writekey` and `dataset`
   fields:
@@ -30,6 +30,13 @@ defmodule HoneylixirTracing do
     dataset: "your-dataset-name",
     team_writekey: "your-writekey"
   ```
+
+  In addition, optional fields available for this package are as follows:
+
+  |Name|Type|Description|Default|
+  |---|---|---|---|
+  |`:span_ttl_sec|`integer`|How long an inactive span should remain in the ets table, in seconds, in case something has gone wrong|`300`|
+  |`:reaper_interval_sec`|`integer`|How frequently the `HoneylixirTracing.Reaper` should run to cleanup the ets table of orphaned spans|`60`|
 
   ## Usage
 
@@ -114,6 +121,22 @@ defmodule HoneylixirTracing do
     end
   end
   ```
+
+  ## The Reaper
+
+  The `Reaper` module handles cleaning up the ets table used to store state. Two pieces
+  of configuration relate to this:
+
+  * `span_ttl_sec` -> how long a span should remain in the ets table
+  * `:reaper_interval_sec` -> how frequently the Reaper should run in seconds
+
+  If the Span TTL is set too low, it may cleanup active spans. The default is currently
+  set to 5 minutes. However, if a span starts and runs for longer than 5 minutes, it
+  will be deleted from the ets table. This does not inherently mean your span cannot
+  be sent still. If it remains in memory, it will be sent when your work
+  function completes. If the initiating process is still alive, the span should still
+  be sent via the Process dictionary version stored. The main impact is that passing a
+  propagation context based on it will fail to work as expected.
   """
 
   alias Honeylixir.Event

@@ -10,6 +10,12 @@ defmodule HoneylixirTracing.Application do
   defp children do
     [
       HoneylixirTracing.Context
-    ]
+    ] ++ death_the_kid()
+  end
+
+  defp death_the_kid() do
+    if Application.get_env(:honeylixir_tracing, :_start_reaper, true),
+      do: [{HoneylixirTracing.Reaper, []}],
+      else: []
   end
 end

@@ -17,7 +17,7 @@ defmodule HoneylixirTracing.TraceFields do
     {:ok, :ok}
   end
 
-  def start_link(opts) do
+  def start_link(_opts) do
     GenServer.start_link(__MODULE__, :ok, name: __MODULE__)
   end
 
@@ -40,7 +40,7 @@ defmodule HoneylixirTracing.TraceFields do
   end
 
   def lookup_trace_fields(trace_id) when is_binary(trace_id) do
-    case :ets.lookup(@table_name, {trace_id, span_id}) do
+    case :ets.lookup(@table_name, trace_id) do
       [{^trace_id, fields}] ->
         fields
 

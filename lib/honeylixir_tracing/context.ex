@@ -28,45 +28,35 @@ defmodule HoneylixirTracing.Context do
     {:ok, :ok}
   end
 
-  @spec set_current_span(Span.t()) :: :ok | nil
+  @spec set_current_span(Span.t() | {String.t(), String.t()}) :: {:ok, nil | Span.t()}
+  @spec set_current_span(any()) :: {:ok, nil}
   def set_current_span(%Span{} = span) do
     if add_span(span) do
-      context = Process.get(@context_key, [])
-      Process.put(@context_key, [span | context])
-      :ok
+      {:ok, Process.put(@context_key, span)}
+    else
+      {:ok, nil}
     end
   end
 
-  @spec set_current_span({String.t(), String.t()}) :: :ok | nil
   def set_current_span({trace_id, span_id}) when is_binary(trace_id) and is_binary(span_id) do
     case :ets.lookup(@table_name, {trace_id, span_id}) do
       [{{^trace_id, ^span_id}, _expires_at, %Span{} = span}] ->
-        context = Process.get(@context_key, [])
-        Process.put(@context_key, [span | context])
-        :ok
+        {:ok, Process.put(@context_key, span)}
 
       _ ->
-        nil
+        {:ok, nil}
     end
   end
 
-  def set_current_span(_), do: nil
+  def set_current_span(_), do: {:ok, nil}
 
-  @spec current_span() :: nil | HoneylixirTracing.Span.t()
-  def current_span() do
-    @context_key
-    |> Process.get([])
-    |> Enum.at(0)
+  def reset_span(%Span{} = previous_span) do
+    clear_span(current_span())
+    set_current_span(previous_span)
   end
 
-  @spec clear_current_span() :: none()
-  def clear_current_span() do
-    {current_span, remaining} = List.pop_at(current_context(), 0)
-    clear_span(current_span)
-    Process.put(@context_key, remaining)
-
-    current_span
-  end
+  @spec current_span() :: HoneylixirTracing.Span.t() | nil
+  def current_span(), do: Process.get(@context_key)
 
   @spec current_span_id() :: String.t() | nil
   def current_span_id() do
@@ -93,8 +83,6 @@ defmodule HoneylixirTracing.Context do
   end
 
   defp clear_span(_), do: nil
-
-  defp current_context(), do: Process.get(@context_key, [])
 
   defp ttl(), do: Application.get_env(:honeylixir_tracing, :span_ttl_sec, 300) * 1000
 end

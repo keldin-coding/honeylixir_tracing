@@ -20,7 +20,7 @@ defmodule HoneylixirTracing do
 
   ## Configuration
 
-  Most of the required configuration for this package depends on configuration set for
+  All of the required configuration for this package depends on configuration set for
   the `Honeylixir` project, the underlying library used for sending the data. The
   absolute minimum configuration required is to set the `team_writekey` and `dataset`
   fields:
@@ -35,7 +35,7 @@ defmodule HoneylixirTracing do
 
   |Name|Type|Description|Default|
   |---|---|---|---|
-  |`:span_ttl_sec|`integer`|How long an inactive span should remain in the ets table, in seconds, in case something has gone wrong|`300`|
+  |`:span_ttl_sec`|`integer`|How long an inactive span should remain in the ets table, in seconds, in case something has gone wrong|`300`|
   |`:reaper_interval_sec`|`integer`|How frequently the `HoneylixirTracing.Reaper` should run to cleanup the ets table of orphaned spans|`60`|
 
   ## Usage
@@ -93,7 +93,7 @@ defmodule HoneylixirTracing do
     struct, to the callback. This should not be *accepted* by the Client API but instead
     built for the user directly and passed to the Server. In the callback, use that as the
     first argument to a `HoneylixirTracing.span/4` call which wraps your work.
-  * For asynchronous work, do *not* pass a context in and start a span from it.
+  * For asynchronous work, do *not* start a span from a context passed in.
     Asynchronous work is akin to background work done by a web application, meaning that
     one would consider them linked spans rather than child spans. You can use the
     underlying `Honeylixir` library to send these events along. Utility functions
@@ -133,10 +133,9 @@ defmodule HoneylixirTracing do
   If the Span TTL is set too low, it may cleanup active spans. The default is currently
   set to 5 minutes. However, if a span starts and runs for longer than 5 minutes, it
   will be deleted from the ets table. This does not inherently mean your span cannot
-  be sent still. If it remains in memory, it will be sent when your work
-  function completes. If the initiating process is still alive, the span should still
-  be sent via the Process dictionary version stored. The main impact is that passing a
-  propagation context based on it will fail to work as expected.
+  be sent still. If it is still the *currently* active span and does not require a
+  parent, then it will send fine. However, if your span does have a parent older than
+  5 minutes, it's entirely probable you will end up with an incomplete trace.
   """
 
   alias Honeylixir.Event
@@ -197,21 +196,24 @@ defmodule HoneylixirTracing do
   end
 
   defp do_span(%HoneylixirTracing.Span{} = span, work) do
-    HoneylixirTracing.Context.set_current_span(span)
+    {:ok, previous_span} = HoneylixirTracing.Context.set_current_span(span)
 
     try do
       work.()
+      # rescue
+      #   err when is_exception(err) ->
+      #     HoneylixirTracing.add_field_data(%{"error_type" => err.__struct__, "error" => err.message})
     after
-      latest_span = HoneylixirTracing.Context.clear_current_span()
-
       # Account for something going wrong and the current span being missing
       # somehow. We'll assume horrible things happened and not try to send a
       # possibly broken and outdated span from above.
-      if latest_span do
-        latest_span
+      if current_span = HoneylixirTracing.Context.current_span() do
+        current_span
         |> Span.prepare_to_send()
         |> Event.send()
       end
+
+      HoneylixirTracing.Context.set_current_span(previous_span)
     end
   end
 
@@ -222,11 +224,14 @@ defmodule HoneylixirTracing do
   names will have their contents replaced. Returns an `:ok` if a span was updated
   successfully, `nil` otherwise.
   """
-  @spec add_field_data(Honeylixir.Event.fields_map()) :: :ok | nil
+  @spec add_field_data(Honeylixir.Event.fields_map()) :: Honeylixir.Span.t() | nil
   def add_field_data(fields) when is_map(fields) do
     if current_span = HoneylixirTracing.Context.current_span() do
-      HoneylixirTracing.Span.add_field_data(current_span, fields)
-      |> HoneylixirTracing.Context.set_current_span()
+      new_span = HoneylixirTracing.Span.add_field_data(current_span, fields)
+
+      HoneylixirTracing.Context.set_current_span(new_span)
+
+      new_span
     end
   end
 

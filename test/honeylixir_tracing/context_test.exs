@@ -18,13 +18,14 @@ defmodule HoneylixirTracing.ContextTest do
       teardown()
     end
 
-    test "returns the span at the head of the list" do
-      Process.put(:honeylixir_context, [
-        Span.setup("newest", %{}),
-        Span.setup("oldest", %{})
-      ])
+    test "returns the span set as current" do
+      start_supervised!(HoneylixirTestListener)
 
-      assert Context.current_span().event.fields["name"] == "newest"
+      HoneylixirTracing.span("older", fn ->
+        HoneylixirTracing.span("newer", fn ->
+          assert Context.current_span().event.fields["name"] == "newer"
+        end)
+      end)
 
       teardown()
     end
@@ -34,7 +35,7 @@ defmodule HoneylixirTracing.ContextTest do
     test "allows setting first span" do
       span = Span.setup("cool_times", %{})
 
-      assert :ok = Context.set_current_span(span)
+      assert {:ok, nil} = Context.set_current_span(span)
 
       assert Context.current_span() == span
 
@@ -57,7 +58,7 @@ defmodule HoneylixirTracing.ContextTest do
       Process.delete(:honeylixir_context)
       assert is_nil(Context.current_span())
 
-      assert :ok = Context.set_current_span({span.trace_id, span.span_id})
+      assert {:ok, nil} = Context.set_current_span({span.trace_id, span.span_id})
       assert Context.current_span() == span
 
       teardown()
@@ -66,7 +67,7 @@ defmodule HoneylixirTracing.ContextTest do
     test "returns nil if the span defined by that {trace_id, span_id} combo is unknown" do
       teardown()
 
-      assert is_nil(Context.set_current_span({"no", "no"}))
+      assert {:ok, nil} = Context.set_current_span({"no", "no"})
 
       teardown()
     end
@@ -77,7 +78,7 @@ defmodule HoneylixirTracing.ContextTest do
       assert is_nil(Context.current_span_id())
 
       span = Span.setup("foo", %{})
-      :ok = Context.set_current_span(span)
+      {:ok, nil} = Context.set_current_span(span)
 
       refute is_nil(Context.current_span_id())
       assert Context.current_span_id() == span.span_id
@@ -91,35 +92,10 @@ defmodule HoneylixirTracing.ContextTest do
       assert is_nil(Context.current_trace_id())
 
       span = Span.setup("foo", %{})
-      :ok = Context.set_current_span(span)
+      {:ok, _} = Context.set_current_span(span)
 
       refute is_nil(Context.current_trace_id())
       assert Context.current_trace_id() == span.trace_id
-
-      teardown()
-    end
-  end
-
-  describe "the current span stack" do
-    test "allows setting multiple current spans, building a stack of them" do
-      parent_span = Span.setup("parent", %{"branch" => 0})
-      child_span = Span.setup("child", %{"branch" => 1})
-      grandchild_span = Span.setup("grandchild", %{"branch" => 2})
-
-      assert :ok = Context.set_current_span(parent_span)
-      assert :ok = Context.set_current_span(child_span)
-      assert :ok = Context.set_current_span(grandchild_span)
-
-      assert Context.current_span() == grandchild_span
-      Context.clear_current_span()
-
-      assert Context.current_span() == child_span
-      Context.clear_current_span()
-
-      assert Context.current_span() == parent_span
-      Context.clear_current_span()
-
-      assert is_nil(Context.current_span())
 
       teardown()
     end

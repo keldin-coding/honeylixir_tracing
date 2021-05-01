@@ -101,7 +101,7 @@ defmodule HoneylixirTracingTest do
       event = %{parent_span.event | dataset: "something-fake"}
       parent_span = %{parent_span | event: event}
 
-      :ok = HoneylixirTracing.Context.set_current_span(parent_span)
+      {:ok, _} = HoneylixirTracing.Context.set_current_span(parent_span)
       propagation = HoneylixirTracing.current_propagation_context()
 
       # This is dumb, but it ensures there is no current span
@@ -125,7 +125,7 @@ defmodule HoneylixirTracingTest do
       event = %{parent_span.event | dataset: "something-fake"}
       parent_span = %{parent_span | event: event}
 
-      :ok = HoneylixirTracing.Context.set_current_span(parent_span)
+      {:ok, _} = HoneylixirTracing.Context.set_current_span(parent_span)
       propagation = HoneylixirTracing.current_propagation_context()
 
       # This is dumb, but it ensures there is no current span
@@ -147,10 +147,15 @@ defmodule HoneylixirTracingTest do
     end
   end
 
+  @tag timeout: :infinity
   describe "add_field_data/1" do
     test "adds to the underlying event the entire map given" do
       HoneylixirTracing.span("test span", fn ->
-        assert :ok = HoneylixirTracing.add_field_data(%{"new field" => 1, "other" => 2})
+        assert span = HoneylixirTracing.add_field_data(%{"new field" => 1, "other" => 2})
+        refute is_nil(span)
+
+        assert span.event.fields["new field"] == 1
+        assert span.event.fields["other"] == 2
       end)
 
       assert [%{"name" => "test span", "new field" => 1, "other" => 2}] =
@@ -159,7 +164,7 @@ defmodule HoneylixirTracingTest do
 
     test "updates the span in ETS with the new data" do
       HoneylixirTracing.span("test span", %{"old field" => :old}, fn ->
-        assert :ok = HoneylixirTracing.add_field_data(%{"new field" => 1})
+        HoneylixirTracing.add_field_data(%{"new field" => 1})
 
         # This is convoluted, but here we go... We're going to get the current
         # span which is in the process dictionary. Then use the {trace_id, span_id}
@@ -189,7 +194,7 @@ defmodule HoneylixirTracingTest do
 
     test "returns a propagation context when a current span exists" do
       span = HoneylixirTracing.Span.setup("foo", %{})
-      :ok = HoneylixirTracing.Context.set_current_span(span)
+      {:ok, _} = HoneylixirTracing.Context.set_current_span(span)
 
       %HoneylixirTracing.Span{
         trace_id: expected_trace_id,

@@ -1,4 +1,5 @@
 defmodule HoneylixirTracing.Reaper do
+  @moduledoc false
   use GenServer
 
   def start_link(args) do

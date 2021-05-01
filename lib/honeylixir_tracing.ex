@@ -251,4 +251,29 @@ defmodule HoneylixirTracing do
     HoneylixirTracing.Context.current_span()
     |> HoneylixirTracing.Propagation.from_span()
   end
+
+  @doc """
+  Helper method for sending a `link` span annotation.
+
+  Accepts a `t:Honeylixir.Propagation.t/0` as the data for what span to link to.
+  If no span is currently active, does nothing and returns `nil`. Please consider
+  this feature experimental.
+  """
+  @doc since: "0.3.0"
+  def link_to_span(%HoneylixirTracing.Propagation{parent_id: span_id, trace_id: trace_id}) do
+    if current_span = HoneylixirTracing.Context.current_span() do
+      event =
+        Honeylixir.Event.create(%{
+          "trace.link.trace_id" => trace_id,
+          "trace.link.span_id" => span_id,
+          "meta.span_type" => "link",
+          "trace.parent_id" => current_span.span_id,
+          "trace.trace_id" => current_span.trace_id
+        })
+
+      %{event | sample_rate: 1} |> Honeylixir.Event.send()
+    end
+  end
+
+  def link_to_span(_), do: nil
 end

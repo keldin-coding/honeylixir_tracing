@@ -147,7 +147,6 @@ defmodule HoneylixirTracingTest do
     end
   end
 
-  @tag timeout: :infinity
   describe "add_field_data/1" do
     test "adds to the underlying event the entire map given" do
       HoneylixirTracing.span("test span", fn ->
@@ -212,6 +211,43 @@ defmodule HoneylixirTracingTest do
              } = HoneylixirTracing.current_propagation_context()
 
       teardown()
+    end
+  end
+
+  describe "link_to_span/1" do
+    test "does nothing with no active span" do
+      prop = %HoneylixirTracing.Propagation{trace_id: "foo", parent_id: "bar"}
+
+      assert is_nil(HoneylixirTracing.link_to_span(prop))
+
+      assert [] = HoneylixirTestListener.values()
+    end
+
+    test "does nothing when given a non-propagation argument" do
+      assert is_nil(HoneylixirTracing.link_to_span(nil))
+
+      assert [] = HoneylixirTestListener.values()
+    end
+
+    test "sends a span annotation based on the propagation" do
+      prop = %HoneylixirTracing.Propagation{trace_id: "foo", parent_id: "bar"}
+
+      HoneylixirTracing.span("parent", fn ->
+        HoneylixirTracing.link_to_span(prop)
+      end)
+
+      assert [span_event, annotation] = HoneylixirTestListener.values()
+
+      span_event_span_id = span_event.fields["trace.span_id"]
+      span_event_trace_id = span_event.fields["trace.trace_id"]
+
+      assert %{
+               "trace.link.trace_id" => "foo",
+               "trace.link.span_id" => "bar",
+               "meta.span_type" => "link",
+               "trace.parent_id" => ^span_event_span_id,
+               "trace.trace_id" => ^span_event_trace_id
+             } = annotation.fields
     end
   end
 

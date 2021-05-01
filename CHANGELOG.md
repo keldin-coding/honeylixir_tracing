@@ -2,8 +2,9 @@
 
 ## 0.3.0 (in progress)
 
-* Add Reaper
+* Add Reaper for cleaning up ETS table
 * Change context to be not a stack and store data solely in the ETS table. The main trade-off here is that the Process dictionary causes garbage collection so if we start storing lots of spans in a Process, it may accumulate more memory than it needs.
+* Add utility function for sending link type span annotations
 
 ## 0.2.0
 

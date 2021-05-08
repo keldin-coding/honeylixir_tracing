@@ -117,6 +117,14 @@ defmodule HoneylixirTracingTest do
       assert Map.get(sent_span, "trace.parent_id") == parent_span.span_id
       assert Map.get(sent_span, "name") == "test child"
     end
+
+    test "passing a nil propagation acts like span/2" do
+      assert :ok = HoneylixirTracing.span(nil, "test span", fn -> :ok end)
+
+      [sent_span] = fieldsets_from_listener()
+      assert Map.get(sent_span, "name") == "test span"
+      refute is_nil(Map.get(sent_span, "trace.trace_id"))
+    end
   end
 
   describe "span/4 with propagation" do
@@ -144,6 +152,15 @@ defmodule HoneylixirTracingTest do
       assert Map.get(sent_span, "trace.parent_id") == parent_span.span_id
       assert Map.get(sent_span, "name") == "test child"
       assert Map.get(sent_span, "cool") == "people"
+    end
+
+    test "passing a nil propagation acts like span/3" do
+      assert :ok = HoneylixirTracing.span(nil, "test span", %{"cool" => "value"}, fn -> :ok end)
+
+      [sent_span] = fieldsets_from_listener()
+      assert Map.get(sent_span, "name") == "test span"
+      assert Map.get(sent_span, "cool") == "value"
+      refute is_nil(Map.get(sent_span, "trace.trace_id"))
     end
   end
 

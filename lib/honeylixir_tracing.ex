@@ -160,31 +160,13 @@ defmodule HoneylixirTracing do
     do: span(span_name, %{}, work)
 
   @doc """
-  Create and send a span to Honeycomb by propogating tracing context.
-
-  Accepts a `t:HoneylixirTracing.Propagation.t/0` for continuing work from another Process's trace.
-  """
-  @doc since: "0.2.0"
-  @spec span(
-          HoneylixirTracing.Propagation.t(),
-          String.t(),
-          Honeylixir.Event.fields_map(),
-          work_function()
-        ) :: span_return()
-  def span(%HoneylixirTracing.Propagation{} = propagation, span_name, %{} = fields, work)
-      when is_binary(span_name) and is_function(work, 0) do
-    Span.setup(propagation, span_name, fields)
-    |> do_span(work)
-  end
-
-  @doc """
   Create and send a span to Honeycomb by optionally propogating tracing context.
 
   This form, `span/3`, has two possible calling signatures: the first is a non-propogated
   span with initial fields; the second accepts a propogated trace but no initial fields.
   """
   @doc since: "0.2.0"
-  @spec span(HoneylixirTracing.Propagation.t(), String.t(), work_function()) :: span_return()
+  @spec span(HoneylixirTracing.Propagation.t() | nil, String.t(), work_function()) :: span_return()
   @spec span(String.t(), Honeylixir.Event.fields_map(), work_function()) :: span_return()
   def span(propagation_or_name, name_or_fields, work)
 
@@ -196,6 +178,32 @@ defmodule HoneylixirTracing do
       when is_binary(span_name) and is_function(work, 0) do
     Span.setup(prop, span_name, %{})
     |> do_span(work)
+  end
+
+  def span(nil, span_name, work) when is_binary(span_name) and is_function(work, 0) do
+    Span.setup(span_name, %{}) |> do_span(work)
+  end
+
+  @doc """
+  Create and send a span to Honeycomb by propogating tracing context.
+
+  Accepts a `t:HoneylixirTracing.Propagation.t/0` for continuing work from another Process's trace.
+  """
+  @doc since: "0.2.0"
+  @spec span(
+          HoneylixirTracing.Propagation.t() | nil,
+          String.t(),
+          Honeylixir.Event.fields_map(),
+          work_function()
+        ) :: span_return()
+  def span(%HoneylixirTracing.Propagation{} = propagation, span_name, %{} = fields, work)
+      when is_binary(span_name) and is_function(work, 0) do
+    Span.setup(propagation, span_name, fields)
+    |> do_span(work)
+  end
+
+  def span(nil, span_name, fields, work) when is_binary(span_name) and is_map(fields) and is_function(work, 0) do
+    Span.setup(span_name, fields) |> do_span(work)
   end
 
   defp do_span(%HoneylixirTracing.Span{} = span, work) do
@@ -220,7 +228,7 @@ defmodule HoneylixirTracing do
   See `start_span/3`.
   """
   @doc since: "0.3.0"
-  @spec start_span(HoneylixirTracing.Propagation.t(), String.t()) ::
+  @spec start_span(HoneylixirTracing.Propagation.t() | nil, String.t()) ::
           {:ok, HoneylixirTracing.Span.t() | nil}
   @spec start_span(String.t(), Honeylixir.Event.fields_map()) ::
           {:ok, HoneylixirTracing.Span.t() | nil}
@@ -229,6 +237,8 @@ defmodule HoneylixirTracing do
   def start_span(%HoneylixirTracing.Propagation{} = propagation, name) when is_binary(name) do
     start_span(propagation, name, %{})
   end
+
+  def start_span(nil, name) when is_binary(name), do: start_span(name, %{})
 
   def start_span(name, fields) when is_binary(name) and is_map(fields) do
     Span.setup(name, fields)
@@ -253,11 +263,17 @@ defmodule HoneylixirTracing do
   only give a duration rather than at least a start time.
   """
   @doc since: "0.3.0"
-  @spec start_span(HoneylixirTracing.Propagation.t(), String.t(), Honeylixir.Event.fields_map()) ::
+  @spec start_span(HoneylixirTracing.Propagation.t() | nil, String.t(), Honeylixir.Event.fields_map()) ::
           {:ok, HoneylixirTracing.Span.t() | nil}
   def start_span(%HoneylixirTracing.Propagation{} = propagation, name, fields)
       when is_binary(name) and is_map(fields) do
     Span.setup(propagation, name, fields)
+    |> HoneylixirTracing.Context.set_current_span()
+  end
+
+  def start_span(nil, name, fields)
+      when is_binary(name) and is_map(fields) do
+    Span.setup(name, fields)
     |> HoneylixirTracing.Context.set_current_span()
   end
 

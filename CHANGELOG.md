@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.2
+
+* Allow the `HoneylixirTracing` public API functions accept `nil` propagation
+
 ## 0.3.1
 
 * Add `setup/3` that accepts a `nil` propagation header to take some onus off of users

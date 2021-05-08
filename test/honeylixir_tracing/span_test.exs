@@ -49,16 +49,38 @@ defmodule HoneylixirTracing.SpanTest do
     end
   end
 
-  describe "prepare_to_send/0" do
-    test "returns the underlying event with all span fields added", %{span: parent_span} do
+  describe "setup/3" do
+    test "accepts propagation data" do
+      prop = %HoneylixirTracing.Propagation{
+        trace_id: "foo",
+        parent_id: "bar",
+        dataset: "cool-stuff"
+      }
+
+      span = Span.setup(prop, "neato", %{"val" => 1})
+
+      assert span.parent_id == "bar"
+      assert span.trace_id == "foo"
+      assert span.event.dataset == "cool-stuff"
+      assert span.event.fields["name"] == "neato"
+      assert span.event.fields["val"] == 1
+    end
+  end
+
+  describe "send/1" do
+    test "sends the underlying event with all span fields added", %{span: parent_span} do
+      start_supervised!(HoneylixirTestListener)
+
       HoneylixirTracing.Context.set_current_span(parent_span)
 
       child_span = Span.setup("child", %{"field" => ["test_value"]})
       # Nobody likes this, but simulate a tiny amount of time for the child span
       :timer.sleep(5)
 
-      child_event = Span.prepare_to_send(child_span)
-      parent_event = Span.prepare_to_send(parent_span)
+      Span.send(child_span)
+      Span.send(parent_span)
+
+      [parent_event, child_event] = HoneylixirTestListener.values()
 
       assert parent_event.fields["duration_ms"] >= 0.0
       assert child_event.fields["duration_ms"] >= 0.0

@@ -70,15 +70,16 @@ defmodule HoneylixirTracing.Span do
     }
   end
 
-  @spec prepare_to_send(t()) :: Honeylixir.Event.t()
-  def prepare_to_send(%Span{} = span) do
-    span.event
+  @spec send(t()) :: none()
+  def send(%Span{event: event} = span) do
+    event
     |> Event.add(%{
       @trace_id_field => span.trace_id,
       @span_id_field => span.span_id,
       @parent_id_field => span.parent_id,
       @duration_ms_field => duration_ms_from_nativetime(span.start_time, System.monotonic_time())
     })
+    |> Event.send()
   end
 
   def add_field_data(%Span{event: event} = span, fields) when is_map(fields) do

@@ -38,9 +38,10 @@ defmodule HoneylixirTracing.Context do
     end
   end
 
-  def set_current_span({trace_id, span_id}) when is_binary(trace_id) and is_binary(span_id) do
-    case :ets.lookup(@table_name, {trace_id, span_id}) do
-      [{{^trace_id, ^span_id}, _expires_at, %Span{} = span}] ->
+  def set_current_span({trace_id, span_id} = key)
+      when is_binary(trace_id) and is_binary(span_id) do
+    case lookup_span(key) do
+      %Span{} = span ->
         {:ok, Process.put(@context_key, span)}
 
       _ ->
@@ -48,12 +49,11 @@ defmodule HoneylixirTracing.Context do
     end
   end
 
-  def set_current_span(_), do: {:ok, nil}
-
-  def reset_span(%Span{} = previous_span) do
-    clear_span(current_span())
-    set_current_span(previous_span)
+  def set_current_span(nil) do
+    {:ok, Process.put(@context_key, nil)}
   end
+
+  def set_current_span(_), do: {:ok, nil}
 
   @spec current_span() :: HoneylixirTracing.Span.t() | nil
   def current_span(), do: Process.get(@context_key)
@@ -78,11 +78,31 @@ defmodule HoneylixirTracing.Context do
 
   def add_span(_), do: false
 
-  defp clear_span(%Span{trace_id: trace_id, span_id: span_id}) do
+  def clear_span(%Span{trace_id: trace_id, span_id: span_id}) do
     :ets.delete(@table_name, {trace_id, span_id})
   end
 
-  defp clear_span(_), do: nil
+  def clear_span(_), do: nil
+
+  def lookup_span(%Span{trace_id: trace_id, span_id: span_id}) do
+    lookup_span({trace_id, span_id})
+  end
+
+  def lookup_span({trace_id, span_id} = key) when is_binary(trace_id) and is_binary(span_id) do
+    current_time = System.monotonic_time(:millisecond)
+
+    case :ets.lookup(@table_name, key) do
+      [{{^trace_id, ^span_id}, expires_at, %Span{} = span}] when expires_at > current_time ->
+        span
+
+      [{{^trace_id, ^span_id}, _, %Span{} = span}] ->
+        clear_span(span)
+        nil
+
+      _ ->
+        nil
+    end
+  end
 
   defp ttl(), do: Application.get_env(:honeylixir_tracing, :span_ttl_sec, 300) * 1000
 end

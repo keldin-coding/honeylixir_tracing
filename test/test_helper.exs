@@ -17,6 +17,10 @@ defmodule HoneylixirTestListener do
     Agent.update(__MODULE__, fn state -> [event | state] end)
   end
 
+  def clear() do
+    Agent.update(__MODULE__, fn _ -> [] end)
+  end
+
   def values() do
     Agent.get(__MODULE__, & &1)
   end

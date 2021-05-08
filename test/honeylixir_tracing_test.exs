@@ -251,6 +251,90 @@ defmodule HoneylixirTracingTest do
     end
   end
 
+  describe "manual span management" do
+    test "accepts propagation as well" do
+      prop =
+        HoneylixirTracing.Span.setup("parent1", %{}) |> HoneylixirTracing.Propagation.from_span()
+
+      HoneylixirTracing.start_span(prop, "child")
+      HoneylixirTracing.end_span()
+
+      [child_event] = HoneylixirTestListener.values()
+      assert child_event.fields["trace.trace_id"] == prop.trace_id
+      assert child_event.fields["trace.parent_id"] == prop.parent_id
+      assert child_event.fields["name"] == "child"
+
+      HoneylixirTestListener.clear()
+
+      HoneylixirTracing.start_span(prop, "another_child", %{"cool" => "magoo"})
+      HoneylixirTracing.end_span()
+
+      [child_event] = HoneylixirTestListener.values()
+      assert child_event.fields["trace.trace_id"] == prop.trace_id
+      assert child_event.fields["trace.parent_id"] == prop.parent_id
+      assert child_event.fields["name"] == "another_child"
+      assert child_event.fields["cool"] == "magoo"
+    end
+
+    test "an extra end_span does nothing" do
+      HoneylixirTracing.start_span("nice", %{})
+      HoneylixirTracing.end_span()
+      HoneylixirTracing.end_span()
+
+      assert [%Honeylixir.Event{} = event] = HoneylixirTestListener.values()
+      assert event.fields["name"] == "nice"
+    end
+
+    test "when no previous span is given to end_span, previous spans will be orphaned" do
+      HoneylixirTracing.start_span("lost", %{})
+      {:ok, lost_span} = HoneylixirTracing.start_span("nice", %{})
+
+      HoneylixirTracing.end_span()
+      assert is_nil(HoneylixirTracing.Context.current_span())
+
+      HoneylixirTracing.end_span()
+      assert is_nil(HoneylixirTracing.Context.current_span())
+
+      sent_events = HoneylixirTestListener.values()
+      assert length(sent_events) == 1
+
+      assert [nice_event] = HoneylixirTestListener.values()
+      assert nice_event.fields["name"] == "nice"
+
+      assert is_nil(
+               HoneylixirTracing.Context.lookup_span(
+                 {nice_event.fields["trace.trace_id"], nice_event.fields["trace.span_id"]}
+               )
+             )
+
+      assert HoneylixirTracing.Context.lookup_span(lost_span)
+    end
+
+    test "with previous span stored, we can go back in the stack" do
+      {:ok, parent_previous} = HoneylixirTracing.start_span("parent", %{})
+      {:ok, child_previous} = HoneylixirTracing.start_span("child", %{})
+
+      HoneylixirTracing.end_span(child_previous)
+      assert HoneylixirTracing.Context.current_span() == child_previous
+
+      HoneylixirTracing.end_span(parent_previous)
+      assert is_nil(HoneylixirTracing.Context.current_span())
+
+      sent_events = HoneylixirTestListener.values()
+      assert length(sent_events) == 2
+
+      assert [parent_event, child_event] = HoneylixirTestListener.values()
+
+      %{"trace.trace_id" => parent_trace_id, "trace.span_id" => parent_span_id} =
+        parent_event.fields
+
+      %{"trace.trace_id" => child_trace_id, "trace.span_id" => child_span_id} = child_event.fields
+
+      assert is_nil(HoneylixirTracing.Context.lookup_span({parent_trace_id, parent_span_id}))
+      assert is_nil(HoneylixirTracing.Context.lookup_span({child_trace_id, child_span_id}))
+    end
+  end
+
   defp teardown() do
     Process.delete(:honeylixir_context)
     :ets.delete_all_objects(:honeylixir_tracing_context)

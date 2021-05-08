@@ -139,7 +139,6 @@ defmodule HoneylixirTracing do
   """
   @moduledoc since: "0.3.0"
 
-  alias Honeylixir.Event
   alias HoneylixirTracing.Span
 
   @typedoc """
@@ -211,14 +210,73 @@ defmodule HoneylixirTracing do
       # Account for something going wrong and the current span being missing
       # somehow. We'll assume horrible things happened and not try to send a
       # possibly broken and outdated span from above.
-      if current_span = HoneylixirTracing.Context.current_span() do
-        current_span
-        |> Span.prepare_to_send()
-        |> Event.send()
-      end
-
-      HoneylixirTracing.Context.set_current_span(previous_span)
+      end_span(previous_span)
     end
+  end
+
+  @doc """
+  Start a span and manage ending it yourself.
+
+  See `start_span/3`.
+  """
+  @doc since: "0.3.0"
+  @spec start_span(HoneylixirTracing.Propagation.t(), String.t()) ::
+          {:ok, HoneylixirTracing.Span.t() | nil}
+  @spec start_span(String.t(), Honeylixir.Event.fields_map()) ::
+          {:ok, HoneylixirTracing.Span.t() | nil}
+  def start_span(propagation_or_name, name_or_fields)
+
+  def start_span(%HoneylixirTracing.Propagation{} = propagation, name) when is_binary(name) do
+    start_span(propagation, name, %{})
+  end
+
+  def start_span(name, fields) when is_binary(name) and is_map(fields) do
+    Span.setup(name, fields)
+    |> HoneylixirTracing.Context.set_current_span()
+  end
+
+  @doc """
+  Start a span and manage ending it yourself.
+
+  Functionally looks and behaves much like the `span` functions. It accepts some combination of
+  a propagation context, a span name, and a set of fields to start a span. The result
+  is a tuple of `:ok` and whatever the previous current span was. You can use this
+  in an `end_span/1` call to set the current span back to what it used to be.
+
+  Every usage of `start_span` MUST have an `end_span` call or you may end up with
+  unfinished spans or traces or other unexpected and undesirable results, such as
+  a current span that lives longer than it should. If you can, try to store the
+  previous span somewhere you can use to reset the current span. It is
+  recommended you only use this in cases where this is impossible since in those
+  places you could probably use a function in the `span` family instead. A common
+  example for using this is using `:telemetry` events as spans when those events
+  only give a duration rather than at least a start time.
+  """
+  @doc since: "0.3.0"
+  @spec start_span(HoneylixirTracing.Propagation.t(), String.t(), Honeylixir.Event.fields_map()) ::
+          {:ok, HoneylixirTracing.Span.t() | nil}
+  def start_span(%HoneylixirTracing.Propagation{} = propagation, name, fields)
+      when is_binary(name) and is_map(fields) do
+    Span.setup(propagation, name, fields)
+    |> HoneylixirTracing.Context.set_current_span()
+  end
+
+  @doc """
+  Used for manually ending the currently active span.
+
+  This SHOULD only be used with `start_span` calls. Any `end_span` call SHOULD have
+  a corresponding `start_span` call, though it will not result in an error if there is
+  no active span. The optional `previous_span` argument is what the currently active
+  span will be set to after the current one is sent.
+  """
+  @doc since: "0.3.0"
+  def end_span(previous_span \\ nil) do
+    if current_span = HoneylixirTracing.Context.current_span() do
+      Span.send(current_span)
+      HoneylixirTracing.Context.clear_span(current_span)
+    end
+
+    HoneylixirTracing.Context.set_current_span(previous_span)
   end
 
   @doc """

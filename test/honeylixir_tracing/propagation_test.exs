@@ -6,6 +6,20 @@ defmodule HoneylixirTracing.PropagationTest do
     %{span: HoneylixirTracing.Span.setup("span", %{})}
   end
 
+  describe "header/1" do
+    test "creates a header map with the key set to the serialized propagation context", %{
+      span: span
+    } do
+      event = span.event
+      event = %{event | dataset: "with a space"}
+      span = %{span | event: event}
+
+      propagation = Propagation.from_span(span)
+
+      assert Propagation.header(propagation) == %{"X-Honeycomb-Trace" => to_string(propagation)}
+    end
+  end
+
   describe "to_string/1" do
     test "ensures the dataset name is URL encoded", %{span: span} do
       event = span.event

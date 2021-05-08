@@ -1,5 +1,7 @@
 # Changelog
 
+## 0.4.0 (in progress)
+
 ## 0.3.0
 
 * Add Reaper for cleaning up ETS table

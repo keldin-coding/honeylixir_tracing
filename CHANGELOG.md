@@ -2,6 +2,10 @@
 
 ## 0.4.0 (in progress)
 
+## 0.3.1
+
+* Add `setup/3` that accepts a `nil` propagation header to take some onus off of users
+
 ## 0.3.0
 
 * Add Reaper for cleaning up ETS table

@@ -45,7 +45,8 @@ defmodule HoneylixirTracing.Span do
     }
   end
 
-  @spec setup(HoneylixirTracing.Propagation.t(), String.t(), Honeylixir.Event.fields_map()) :: t()
+  @spec setup(HoneylixirTracing.Propagation.t() | nil, String.t(), Honeylixir.Event.fields_map()) ::
+          t()
   def setup(
         %HoneylixirTracing.Propagation{
           trace_id: trace_id,
@@ -69,6 +70,8 @@ defmodule HoneylixirTracing.Span do
       start_time: start_time
     }
   end
+
+  def setup(nil, name, fields) when is_binary(name) and is_map(fields), do: setup(name, fields)
 
   @spec send(t()) :: none()
   def send(%Span{event: event} = span) do

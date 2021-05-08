@@ -65,6 +65,15 @@ defmodule HoneylixirTracing.SpanTest do
       assert span.event.fields["name"] == "neato"
       assert span.event.fields["val"] == 1
     end
+
+    test "accepts nil and does nothing with it" do
+      span = Span.setup(nil, "cool", %{"val" => 1})
+
+      assert is_nil(span.parent_id)
+      refute is_nil(span.trace_id)
+      assert span.event.fields["name"] == "cool"
+      assert span.event.fields["val"] == 1
+    end
   end
 
   describe "send/1" do

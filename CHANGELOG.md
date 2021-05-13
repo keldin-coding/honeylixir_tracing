@@ -2,9 +2,11 @@
 
 ## 0.4.0 (in progress)
 
+* Added `Plug` built-in integration for instrumenting plug pipelines
+
 ## 0.3.2
 
-* Allow the `HoneylixirTracing` public API functions accept `nil` propagation
+* Allow the `HoneylixirTracing` public API functions to accept `nil` propagation
 
 ## 0.3.1
 

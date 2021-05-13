@@ -31,7 +31,8 @@ defmodule HoneylixirTracing.MixProject do
     [
       {:honeylixir, "~> 0.6"},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
-      {:credo, only: :dev, runtime: false}
+      {:credo, ">= 0.0.0", only: :dev, runtime: false},
+      {:plug, ">= 1.9.0", optional: true}
     ]
   end
 
@@ -39,7 +40,7 @@ defmodule HoneylixirTracing.MixProject do
     [
       main: HoneylixirTracing,
       source_url: @source_url,
-      extras: ["CHANGELOG.md"]
+      extras: ["CHANGELOG.md", "INTEGRATIONS.md"]
     ]
   end
 

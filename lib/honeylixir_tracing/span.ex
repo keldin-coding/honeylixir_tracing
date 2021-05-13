@@ -1,5 +1,10 @@
 defmodule HoneylixirTracing.Span do
-  @moduledoc false
+  @moduledoc """
+  Used for manipulating span data directly.
+
+  In general, a user shouldn't need to interact with this. While it is documented,
+  please consider this API unstable.
+  """
 
   alias Honeylixir.Event
   alias __MODULE__
@@ -17,9 +22,7 @@ defmodule HoneylixirTracing.Span do
           parent_id: String.t(),
           span_id: String.t(),
           trace_id: String.t(),
-          start_time: integer(),
-          # May be unnecessary? dunno. Gets weird.
-          sent: boolean()
+          start_time: integer()
         }
 
   defstruct [

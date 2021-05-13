@@ -36,7 +36,7 @@ defmodule HoneylixirTracing do
   |Name|Type|Description|Default|
   |---|---|---|---|
   |`:span_ttl_sec`|`integer`|How long an inactive span should remain in the ets table, in seconds, in case something has gone wrong|`300`|
-  |`:reaper_interval_sec`|`integer`|How frequently the `HoneylixirTracing.Reaper` should run to cleanup the ets table of orphaned spans|`60`|
+  |`:reaper_interval_sec`|`integer`|How frequently the should attempt to cleanup the ets table of orphaned spans|`60`|
 
   ## Usage
 
@@ -122,6 +122,11 @@ defmodule HoneylixirTracing do
   end
   ```
 
+  ## Integrations
+
+  Check the [integrations page](INTEGRATIONS.md) for enabling and configuring any
+  of the built-in integrations.
+
   ## The Reaper
 
   The `Reaper` module handles cleaning up the ets table used to store state. Two pieces
@@ -166,7 +171,8 @@ defmodule HoneylixirTracing do
   span with initial fields; the second accepts a propogated trace but no initial fields.
   """
   @doc since: "0.2.0"
-  @spec span(HoneylixirTracing.Propagation.t() | nil, String.t(), work_function()) :: span_return()
+  @spec span(HoneylixirTracing.Propagation.t() | nil, String.t(), work_function()) ::
+          span_return()
   @spec span(String.t(), Honeylixir.Event.fields_map(), work_function()) :: span_return()
   def span(propagation_or_name, name_or_fields, work)
 
@@ -202,7 +208,8 @@ defmodule HoneylixirTracing do
     |> do_span(work)
   end
 
-  def span(nil, span_name, fields, work) when is_binary(span_name) and is_map(fields) and is_function(work, 0) do
+  def span(nil, span_name, fields, work)
+      when is_binary(span_name) and is_map(fields) and is_function(work, 0) do
     Span.setup(span_name, fields) |> do_span(work)
   end
 
@@ -215,9 +222,6 @@ defmodule HoneylixirTracing do
       #   err when is_exception(err) ->
       #     HoneylixirTracing.add_field_data(%{"error_type" => err.__struct__, "error" => err.message})
     after
-      # Account for something going wrong and the current span being missing
-      # somehow. We'll assume horrible things happened and not try to send a
-      # possibly broken and outdated span from above.
       end_span(previous_span)
     end
   end
@@ -263,7 +267,11 @@ defmodule HoneylixirTracing do
   only give a duration rather than at least a start time.
   """
   @doc since: "0.3.0"
-  @spec start_span(HoneylixirTracing.Propagation.t() | nil, String.t(), Honeylixir.Event.fields_map()) ::
+  @spec start_span(
+          HoneylixirTracing.Propagation.t() | nil,
+          String.t(),
+          Honeylixir.Event.fields_map()
+        ) ::
           {:ok, HoneylixirTracing.Span.t() | nil}
   def start_span(%HoneylixirTracing.Propagation{} = propagation, name, fields)
       when is_binary(name) and is_map(fields) do

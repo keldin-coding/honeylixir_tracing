@@ -3,7 +3,7 @@ defmodule HoneylixirTracing.Application do
 
   use Application
 
-  @known_integrations %{plug: HoneylixirTracing.Integrations.Plug}
+  # @known_integrations %{plug: []}
 
   def start(_type, _args) do
     Supervisor.start_link(children(), strategy: :one_for_one)
@@ -12,7 +12,7 @@ defmodule HoneylixirTracing.Application do
   defp children do
     [
       HoneylixirTracing.Context
-    ] ++ death_the_kid() ++ integrations_children()
+    ] ++ death_the_kid() ++ plug_integration()
   end
 
   defp death_the_kid() do
@@ -21,15 +21,15 @@ defmodule HoneylixirTracing.Application do
       else: []
   end
 
-  defp integrations_children() do
-    integrations = Application.get_env(:honeylixir_tracing, :integrations, %{})
+  defp plug_integration() do
+    case Map.get(integration_configs(), :plug) do
+      true ->
+        [{HoneylixirTracing.Integrations.PlugTracker, []}]
 
-    Enum.reduce(@known_integrations, [], fn {name, module}, acc ->
-      case Map.get(integrations, name, nil) do
-        true -> [{module, []} | acc]
-        opts when is_list(opts) -> [{module, opts} | acc]
-        nil -> acc
-      end
-    end)
+      _ ->
+        []
+    end
   end
+
+  defp integration_configs(), do: Application.get_env(:honeylixir_tracing, :integrations, %{})
 end

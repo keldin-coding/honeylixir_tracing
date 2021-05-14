@@ -26,4 +26,5 @@ defmodule HoneylixirTestListener do
   end
 end
 
+:ok = Application.ensure_loaded(:plug)
 ExUnit.start()

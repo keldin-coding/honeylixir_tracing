@@ -32,7 +32,11 @@ defmodule HoneylixirTracing.MixProject do
       {:honeylixir, "~> 0.6"},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
       {:credo, ">= 0.0.0", only: :dev, runtime: false},
-      {:plug, ">= 1.9.0", optional: true}
+      {:plug, ">= 1.9.0", optional: true},
+      # this is pulled in by honeylixir technically, but it seems good to declare
+      # it here since we use it for some integrations.
+      {:telemetry, ">= 0.4.0", optional: true},
+      {:ecto, ">= 3.3.0", optional: true}
     ]
   end
 

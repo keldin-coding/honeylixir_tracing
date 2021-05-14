@@ -25,7 +25,7 @@ Enabling the plug integration requires three:
 ```elixir
 def deps do
   [
-    {:plug, ">= 1.0"}
+    {:plug, ">= 1.9.0"}
   ]
 ```
 
@@ -35,3 +35,19 @@ config :honeylixir_tracing, integrations: %{plug: true}
 ```
 
 3. Include the `HoneylixirTracing.Integrations.Plug` in your plug pipeline as early as possible.
+
+## Ecto
+
+Uses `:telemetry` events to create spans for Ecto queries.
+
+### Using
+
+1. Ensure `ecto` is one of your dependencies
+2. Configure the integration:
+```elixir
+config :honeylixir_tracing, integrations: %{ecto: [repo_name: :my_app]}
+```
+
+You can provide either `repo_name` or `event_prefix` as configuration. Based on Ecto documentation, providing
+only `:repo_name` assumes that the full event is `[:my_app, :repo, :query]`. Providing an `:event_prefix` should
+be a list that `[:query]` can be appended to.

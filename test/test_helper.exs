@@ -26,5 +26,11 @@ defmodule HoneylixirTestListener do
   end
 end
 
+defmodule HoneylixirTestStubbedRepo do
+  def config() do
+    %{database: "whatever_dev"}
+  end
+end
+
 :ok = Application.ensure_loaded(:plug)
 ExUnit.start()

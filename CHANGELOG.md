@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.4.0 (in progress)
+## 0.4.0
 
 * Added `Plug` built-in integration for instrumenting plug pipelines
 * Added `Ecto` built-in integration for ecto queries

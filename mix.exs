@@ -2,7 +2,7 @@ defmodule HoneylixirTracing.MixProject do
   use Mix.Project
 
   @source_url "https://github.com/lirossarvet/honeylixir_tracing"
-  @version "0.4.0-dev"
+  @version "0.4.0"
 
   def project do
     [
@@ -35,8 +35,7 @@ defmodule HoneylixirTracing.MixProject do
       {:plug, ">= 1.9.0", optional: true},
       # this is pulled in by honeylixir technically, but it seems good to declare
       # it here since we use it for some integrations.
-      {:telemetry, ">= 0.4.0", optional: true},
-      {:ecto, ">= 3.3.0", optional: true}
+      {:telemetry, ">= 0.4.0", optional: true}
     ]
   end
 

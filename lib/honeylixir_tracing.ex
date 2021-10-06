@@ -9,7 +9,7 @@ defmodule HoneylixirTracing do
   ```
   def deps() do
     [
-      {:honeylixir_tracing, "~> 0.4.0"}
+      {:honeylixir_tracing, ">= 0.4.0"}
     ]
   end
   ```
